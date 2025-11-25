@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Electronics Store ERP System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom scrollbar styling */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* Modal backdrop */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px);
+        }
+        
+        /* Animation */
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        /* Hover effects */
+        .btn-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-blue-600 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-store text-3xl"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">Electronics Store ERP</h1>
+                        <p class="text-blue-100 text-sm">Sistem Manajemen Persediaan</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-blue-100">Terakhir diperbarui</p>
+                    <p class="text-sm font-semibold" id="lastUpdated"></p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Dashboard Statistics -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">Total Jenis Produk</p>
+                        <p class="text-3xl font-bold text-gray-800" id="totalProducts">0</p>
+                    </div>
+                    <div class="bg-blue-100 rounded-full p-3">
+                        <i class="fas fa-box text-blue-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">Total Stok Keseluruhan</p>
+                        <p class="text-3xl font-bold text-gray-800" id="totalStock">0</p>
+                    </div>
+                    <div class="bg-green-100 rounded-full p-3">
+                        <i class="fas fa-warehouse text-green-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-orange-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">Produk Stok Terendah</p>
+                        <p class="text-lg font-bold text-gray-800" id="lowestStockProduct">-</p>
+                        <p class="text-sm text-orange-600" id="lowestStockQty">0 unit</p>
+                    </div>
+                    <div class="bg-orange-100 rounded-full p-3">
+                        <i class="fas fa-exclamation-triangle text-orange-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Product Management Section -->
+        <section class="bg-white rounded-lg shadow-md">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">Daftar Produk</h2>
+                        <p class="text-gray-600 text-sm">Kelola persediaan produk elektronik</p>
+                    </div>
+                    <button onclick="openAddModal()" class="btn-hover bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700">
+                        <i class="fas fa-plus"></i>
+                        <span>Tambah Produk Baru</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Product Table -->
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode Produk</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Produk</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Beli</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Jual</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Products will be dynamically inserted here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden text-center py-12">
+                <i class="fas fa-box-open text-gray-300 text-6xl mb-4"></i>
+                <p class="text-gray-500 text-lg">Belum ada produk</p>
+                <p class="text-gray-400 text-sm">Klik "Tambah Produk Baru" untuk memulai</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Add Product Modal -->
+    <div id="addModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="modal-backdrop fixed inset-0" onclick="closeAddModal()"></div>
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative slide-in">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Tambah Produk Baru</h3>
+                <form id="addProductForm" onsubmit="addProduct(event)">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Kode Produk</label>
+                            <input type="text" id="productCode" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: LP-001">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Produk</label>
+                            <input type="text" id="productName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: MacBook Air M2">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                            <select id="productCategory" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Pilih Kategori</option>
+                                <option value="PC & Laptop">PC & Laptop</option>
+                                <option value="Smartphone">Smartphone</option>
+                                <option value="TV & Audio">TV & Audio</option>
+                                <option value="Home Appliance">Home Appliance</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Harga Beli (Rp)</label>
+                            <input type="number" id="purchasePrice" required min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="15000000">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Harga Jual (Rp)</label>
+                            <input type="number" id="sellingPrice" required min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="18000000">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Stok Awal</label>
+                            <input type="number" id="initialStock" required min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="10">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
+                            <textarea id="productDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Deskripsi singkat produk..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" onclick="closeAddModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
+                            Batal
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Tambah Produk
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Stock Modal -->
+    <div id="stockModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="modal-backdrop fixed inset-0" onclick="closeStockModal()"></div>
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 relative slide-in">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Tambah Stok</h3>
+                <form id="updateStockForm" onsubmit="updateStock(event)">
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-600 mb-2">Produk: <span id="stockProductName" class="font-semibold"></span></p>
+                        <p class="text-sm text-gray-600 mb-4">Stok saat ini: <span id="currentStock" class="font-semibold text-blue-600"></span> unit</p>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah stok yang ditambahkan</label>
+                        <input type="number" id="additionalStock" required min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="10">
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeStockModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
+                            Batal
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            Tambah Stok
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Management
+        let products = [];
+        let currentStockProductId = null;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProductsFromStorage();
+            updateDashboard();
+            renderProductTable();
+            updateLastUpdated();
+        });
+
+        // Load products from localStorage
+        function loadProductsFromStorage() {
+            const stored = localStorage.getItem('electronicsProducts');
+            if (stored) {
+                products = JSON.parse(stored);
+            } else {
+                // Initialize with sample data
+                products = [
+                    {
+                        id: 'LP-001',
+                        name: 'MacBook Air M2',
+                        category: 'PC & Laptop',
+                        purchasePrice: 15000000,
+                        sellingPrice: 18000000,
+                        stock: 7,
+                        description: 'Laptop tipis dengan chip M2, RAM 8GB, SSD 256GB'
+                    },
+                    {
+                        id: 'HP-055',
+                        name: 'Samsung Galaxy S23',
+                        category: 'Smartphone',
+                        purchasePrice: 8500000,
+                        sellingPrice: 10999000,
+                        stock: 15,
+                        description: 'Smartphone flagship dengan kamera 50MP dan Snapdragon 8 Gen 2'
+                    },
+                    {
+                        id: 'TV-102',
+                        name: 'Samsung Smart TV 55"',
+                        category: 'TV & Audio',
+                        purchasePrice: 7500000,
+                        sellingPrice: 8999000,
+                        stock: 5,
+                        description: 'Smart TV 4K dengan HDR dan voice control'
+                    },
+                    {
+                        id: 'HA-201',
+                        name: 'LG Refrigerator 2 Pintu',
+                        category: 'Home Appliance',
+                        purchasePrice: 4500000,
+                        sellingPrice: 5499000,
+                        stock: 3,
+                        description: 'Kulkas 2 pintu dengan teknologi inverter'
+                    }
+                ];
+                saveProductsToStorage();
+            }
+        }
+
+        // Save products to localStorage
+        function saveProductsToStorage() {
+            localStorage.setItem('electronicsProducts', JSON.stringify(products));
+            updateLastUpdated();
+        }
+
+        // Update dashboard statistics
+        function updateDashboard() {
+            // Total products
+            document.getElementById('totalProducts').textContent = products.length;
+            
+            // Total stock
+            const totalStock = products.reduce((sum, product) => sum + product.stock, 0);
+            document.getElementById('totalStock').textContent = totalStock.toLocaleString('id-ID');
+            
+            // Lowest stock product
+            if (products.length > 0) {
+                const lowestStockProduct = products.reduce((min, product) => 
+                    product.stock < min.stock ? product : min
+                );
+                document.getElementById('lowestStockProduct').textContent = lowestStockProduct.name;
+                document.getElementById('lowestStockQty').textContent = `${lowestStockProduct.stock} unit`;
+            } else {
+                document.getElementById('lowestStockProduct').textContent = '-';
+                document.getElementById('lowestStockQty').textContent = '0 unit';
+            }
+        }
+
+        // Render product table
+        function renderProductTable() {
+            const tbody = document.getElementById('productTableBody');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (products.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            tbody.innerHTML = products.map(product => `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${product.id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${product.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(product.category)}">
+                            ${product.category}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        Rp ${product.purchasePrice.toLocaleString('id-ID')}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        Rp ${product.sellingPrice.toLocaleString('id-ID')}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full ${getStockColor(product.stock)}">
+                            ${product.stock} unit
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
+                        ${product.description || '-'}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        <button onclick="openStockModal('${product.id}')" class="btn-hover text-green-600 hover:text-green-800" title="Tambah Stok">
+                            <i class="fas fa-plus-circle"></i>
+                        </button>
+                        <button onclick="deleteProduct('${product.id}')" class="btn-hover text-red-600 hover:text-red-800" title="Hapus">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Get category color
+        function getCategoryColor(category) {
+            const colors = {
+                'PC & Laptop': 'bg-blue-100 text-blue-800',
+                'Smartphone': 'bg-purple-100 text-purple-800',
+                'TV & Audio': 'bg-green-100 text-green-800',
+                'Home Appliance': 'bg-orange-100 text-orange-800'
+            };
+            return colors[category] || 'bg-gray-100 text-gray-800';
+        }
+
+        // Get stock color
+        function getStockColor(stock) {
+            if (stock <= 5) return 'bg-red-100 text-red-800';
+            if (stock <= 10) return 'bg-yellow-100 text-yellow-800';
+            return 'bg-green-100 text-green-800';
+        }
+
+        // Modal functions
+        function openAddModal() {
+            document.getElementById('addModal').classList.remove('hidden');
+            document.getElementById('addProductForm').reset();
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').classList.add('hidden');
+        }
+
+        function openStockModal(productId) {
+            const product = products.find(p => p.id === productId);
+            if (product) {
+                currentStockProductId = productId;
+                document.getElementById('stockProductName').textContent = product.name;
+                document.getElementById('currentStock').textContent = product.stock;
+                document.getElementById('additionalStock').value = '';
+                document.getElementById('stockModal').classList.remove('hidden');
+            }
+        }
+
+        function closeStockModal() {
+            document.getElementById('stockModal').classList.add('hidden');
+            currentStockProductId = null;
+        }
+
+        // Add product
+        function addProduct(event) {
+            event.preventDefault();
+            
+            const newProduct = {
+                id: document.getElementById('productCode').value,
+                name: document.getElementById('productName').value,
+                category: document.getElementById('productCategory').value,
+                purchasePrice: parseInt(document.getElementById('purchasePrice').value),
+                sellingPrice: parseInt(document.getElementById('sellingPrice').value),
+                stock: parseInt(document.getElementById('initialStock').value),
+                description: document.getElementById('productDescription').value
+            };
+            
+            // Check if product code already exists
+            if (products.some(p => p.id === newProduct.id)) {
+                alert('Kode produk sudah ada!');
+                return;
+            }
+            
+            products.push(newProduct);
+            saveProductsToStorage();
+            updateDashboard();
+            renderProductTable();
+            closeAddModal();
+            
+            // Show success message
+            showNotification('Produk berhasil ditambahkan!', 'success');
+        }
+
+        // Update stock
+        function updateStock(event) {
+            event.preventDefault();
+            
+            const additionalStock = parseInt(document.getElementById('additionalStock').value);
+            const product = products.find(p => p.id === currentStockProductId);
+            
+            if (product) {
+                product.stock += additionalStock;
+                saveProductsToStorage();
+                updateDashboard();
+                renderProductTable();
+                closeStockModal();
+                
+                // Show success message
+                showNotification(`Stok ${product.name} berhasil ditambahkan!`, 'success');
+            }
+        }
+
+        // Delete product
+        function deleteProduct(productId) {
+            const product = products.find(p => p.id === productId);
+            if (product && confirm(`Apakah Anda yakin ingin menghapus produk "${product.name}"?`)) {
+                products = products.filter(p => p.id !== productId);
+                saveProductsToStorage();
+                updateDashboard();
+                renderProductTable();
+                
+                // Show success message
+                showNotification('Produk berhasil dihapus!', 'success');
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 slide-in ${
+                type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Update last updated time
+        function updateLastUpdated() {
+            const now = new Date();
+            const options = { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            };
+            document.getElementById('lastUpdated').textContent = now.toLocaleDateString('id-ID', options);
+        }
+    </script>
+</body>
+</html>
